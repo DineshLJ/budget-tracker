@@ -6,7 +6,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017';
 const dbName = 'budgetTrackerDB';
 
@@ -22,7 +22,15 @@ let db;
 // Connect to MongoDB
 async function connectToMongo() {
   try {
-    const client = new MongoClient(mongoUrl);
+    // Use a single client instance with proper options
+    const client = new MongoClient(mongoUrl, {
+      ssl: true,
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    
     await client.connect();
     console.log('Connected to MongoDB successfully');
     db = client.db(dbName);
@@ -150,6 +158,11 @@ app.get('/api/summary', async (req, res) => {
     console.error('Error generating summary:', error);
     res.status(500).json({ error: 'Failed to generate summary' });
   }
+});
+
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 connectToMongo().then(() => {
