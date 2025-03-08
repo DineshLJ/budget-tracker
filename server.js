@@ -24,11 +24,7 @@ async function connectToMongo() {
   try {
     // Use a single client instance with proper options
     const client = new MongoClient(mongoUrl, {
-      ssl: true,
-      tls: true,
-      tlsAllowInvalidCertificates: false,
-      useNewUrlParser: true,
-      useUnifiedTopology: true
+      
     });
     
     await client.connect();
