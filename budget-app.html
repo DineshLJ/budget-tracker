@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Budget Tracker</title>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --text-color: #334155;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --warning: #f59e0b;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --highlight-bg: #e0f2fe;
+      --income: #16a34a;
+      --bills: #dc2626;
+      --shopping: #7e22ce;
+      --food: #f59e0b;
+      --travel: #1e40af;
+      --entertainment: #ec4899;
+      --uncategorized: #475569;
+      --grocery: #10b981;
+      --clothing: #8b5cf6;
+      --car-transport: #f97316;
+      --health: #9333ea;
+      --utilities: #6b7280;
+      --today-highlight: #fef3c7;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; line-height: 1.6; overflow-x: hidden; }
+    .container { max-width: 100%; width: 100%; margin: 0 auto; padding: 0 10px; }
+    .header-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.75rem; font-weight: 700; margin: 0; color: #1e293b; }
+    .filter-date-container { display: flex; align-items: center; gap: 1rem; }
+    .month-filter, .year-filter { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background-color: var(--card-bg); font-size: 0.9rem; width: 120px; }
+    .current-date { font-size: 0.9rem; color: var(--text-color); padding: 0.5rem; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0.5rem; }
+    .current-date.today { background-color: var(--today-highlight); }
+    .alert { padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; transition: opacity 0.3s ease; }
+    .alert-success { background-color: #dcfce7; border: 1px solid #22c55e; color: #166534; }
+    .alert-danger { background-color: #fee2e2; border: 1px solid #ef4444; color: #991b1b; }
+    .alert-warning { background-color: #fef3c7; border: 1px solid #f59e0b; color: #854d0e; }
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { background-color: var(--card-bg); border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color); transition: transform 0.2s ease; width: 100%; }
+    .card:hover { transform: translateY(-2px); }
+    .card-header { padding: 1rem; border-bottom: 1px solid var(--border-color); background-color: #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+    .card-title { font-weight: 600; font-size: 1rem; }
+    .card-content { padding: 1rem; }
+    .income-card .card-content { color: #2563eb; font-size: 1.5rem; font-weight: 700; text-align: center; }
+    .expense-card .expense-total { color: #dc2626; font-size: 1.5rem; font-weight: 700; text-align: center; }
+    .balance-card .card-content { color: #16a34a; font-size: 1.5rem; font-weight: 700; text-align: center; }
+    .pending-subtext { 
+      font-size: 0.8rem; 
+      color: var(--warning); 
+      margin-top: 0.25rem; 
+      text-align: center; 
+    }
+    .main-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 1.5rem; width: 100%; }
+    @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } h1 { font-size: 1.5rem; } }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 500; color: #475569; }
+    input, select { width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.85rem; transition: border-color 0.2s ease; }
+    input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .btn { padding: 0.4rem 0.8rem; font-size: 0.75rem; font-weight: 500; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-success:hover { background-color: #15803d; }
+    .btn-secondary { background-color: #64748b; color: white; }
+    .btn-secondary:hover { background-color: #475569; }
+    .btn-danger { background-color: var(--danger); color: white; }
+    .btn-danger:hover { background-color: #b91c1c; }
+    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.7rem; }
+    .btn-block { display: block; width: 100%; }
+    .mt-2 { margin-top: 0.5rem; }
+    .mt-4 { margin-top: 1rem; }
+    .btn-tooltip::after { content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background-color: #1e293b; color: white; padding: 0.4rem 0.6rem; border-radius: 0.25rem; font-size: 0.7rem; white-space: nowrap; opacity: 0; visibility: hidden; transition: opacity 0.2s ease; pointer-events: none; z-index: 10; margin-bottom: 0.4rem; }
+    .btn-tooltip:hover::after { opacity: 1; visibility: visible; }
+    .file-upload { margin-top: 1.5rem; }
+    .file-upload-title { font-weight: 600; margin-bottom: 0.5rem; font-size: 0.85rem; }
+    .help-text { font-size: 0.75rem; color: #64748b; margin-top: 0.4rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+    thead { background-color: #f1f5f9; position: sticky; top: 0; z-index: 1; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 0.9rem; }
+    th { font-weight: 600; font-size: 0.95rem; }
+    tr:hover { background-color: #f8fafc; }
+    tr.highlighted { background-color: var(--highlight-bg); }
+    td { word-wrap: break-word; max-width: 200px; }
+    .actions-container { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-start; align-items: center; min-width: 120px; }
+    @media (max-width: 768px) { table { display: block; overflow-x: auto; white-space: nowrap; } th, td { padding: 0.5rem; font-size: 0.8rem; min-width: 80px; } .actions-container { flex-direction: column; gap: 0.2rem; min-width: auto; } .btn-sm { width: 100%; } }
+    .table-footer { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+    .pagination { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; }
+    .pagination-btn { padding: 0.25rem 0.5rem; font-size: 0.7rem; }
+    .pagination-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    .pagination-info { font-size: 0.8rem; color: #64748b; margin-top: 0.4rem; text-align: center; width: 100%; }
+    .select-checkbox { width: 14px; height: 14px; }
+    .text-green { color: #16a34a; }
+    .text-red { color: #dc2626; }
+    .filter-group { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .chart-container { margin-top: 1.5rem; }
+    .chart-filter-group { display: flex; gap: 1rem; flex-wrap: wrap; padding: 0.75rem; }
+    .pending-badge { 
+      display: inline-block; 
+      background-color: var(--warning); 
+      color: white; 
+      padding: 0.2rem 0.5rem; 
+      border-radius: 0.25rem; 
+      font-size: 0.7rem; 
+      margin-left: 0.5rem; 
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-container">
+      <h1>Monthly Budget Tracker</h1>
+      <div class="filter-date-container">
+        <select id="month-filter" class="month-filter"></select>
+        <select id="year-filter" class="year-filter"></select>
+        <div class="current-date" id="current-date"></div>
+      </div>
+    </div>
+
+    <div class="alert alert-success" id="success-alert" style="display: none;"></div>
+    <div class="alert alert-danger" id="error-alert" style="display: none;"></div>
+    
+    <div class="summary-cards">
+      <div class="card income-card">
+        <div class="card-header"><div class="card-title" style="text-align: center;">Total Income</div></div>
+        <div class="card-content">0.00</div>
+      </div>
+      <div class="card expense-card">
+        <div class="card-header"><div class="card-title" style="text-align: center;">Total Expenses</div></div>
+        <div class="card-content">
+          <div class="expense-total">0.00</div>
+          <div class="pending-subtext" id="pending-expenses-text" style="display: none;">Includes 0.00 pending</div>
+        </div>
+      </div>
+      <div class="card balance-card">
+        <div class="card-header"><div class="card-title" style="text-align: center;">Net Balance</div></div>
+        <div class="card-content">0.00</div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Add Transaction / Opening Balance</div></div>
+          <div class="card-content">
+            <form id="transaction-form">
+              <div class="form-group">
+                <label for="date">Date *</label>
+                <input type="date" id="date" required>
+              </div>
+              <div class="form-group">
+                <label for="particulars">Description *</label>
+                <input type="text" id="particulars" placeholder="Transaction details" required>
+              </div>
+              <div class="form-group">
+                <label for="deposits">Deposit Amount</label>
+                <input type="number" id="deposits" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="withdrawals">Withdrawal Amount</label>
+                <input type="number" id="withdrawals" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="opening-balance">Opening Balance</label>
+                <input type="number" id="opening-balance" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="category">Category *</label>
+                <input type="text" id="category" placeholder="e.g., Grocery, Clothing, Bills" required>
+              </div>
+              <div class="form-group">
+                <label for="account">Account *</label>
+                <input type="text" id="account" placeholder="e.g., HDFC, ICICI, AXIS" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Add Transaction</button>
+            </form>
+            <div class="file-upload">
+              <div class="file-upload-title">Upload Bank Statement</div>
+              <input type="file" id="statement-upload" accept=".csv,.txt,.xlsx,.xls">
+              <div class="help-text">Supported formats: CSV, Excel (XLSX/XLS), Text</div>
+              <button class="btn btn-primary btn-block mt-2" id="parse-btn" disabled>Parse Statement</button>
+            </div>
+            <button class="btn btn-success btn-block mt-4" id="export-btn">Export to Excel</button>
+          </div>
+        </div>
+        <!-- Monthly Expenses Form -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Known / Upcoming Expenses</div></div>
+          <div class="card-content">
+            <form id="monthly-expense-form">
+              <div class="form-group">
+                <label for="expense-name">Expense Name *</label>
+                <input type="text" id="expense-name" placeholder="e.g., Rent, Netflix, Electricity" required>
+              </div>
+              <div class="form-group">
+                <label for="expense-amount">Amount *</label>
+                <input type="number" id="expense-amount" step="0.01" placeholder="0.00" required>
+              </div>
+              <div class="form-group">
+                <label for="expense-due-date">Due Date *</label>
+                <input type="number" id="expense-due-date" min="1" max="31" placeholder="Day of month (1-31)" required>
+              </div>
+              <div class="form-group">
+                <label for="expense-category">Category *</label>
+                <input type="text" id="expense-category" placeholder="e.g., Bills, Subscription" required>
+              </div>
+              <div class="form-group">
+                <label for="expense-account">Account *</label>
+                <input type="text" id="expense-account" placeholder="e.g., HDFC, ICICI, AXIS" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Add Monthly Expense</button>
+            </form>
+          </div>
+        </div>
+        <!-- Monthly Expense List -->
+        <div class="card mt-4">
+          <div class="card-header"><div class="card-title">Monthly Expense List</div></div>
+          <div class="card-content" style="padding: 0;">
+            <div style="overflow-x: auto;">
+              <table id="monthly-expense-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Category</th>
+                    <th>Account</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="monthly-expense-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Transactions</div></div>
+          <div class="card-content" style="padding: 0;">
+            <div class="filter-group" style="padding: 0.75rem;">
+              <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="account-filter">Filter by Account</label>
+                <input type="text" id="account-filter" placeholder="e.g., HDFC">
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <div style="margin: 0.75rem;">
+                <button class="btn btn-danger btn-sm" id="delete-selected-btn" disabled>Delete Selected</button>
+                <button class="btn btn-danger btn-sm" id="delete-all-selected-btn" style="margin-left: 0.4rem;" disabled>Delete All Selected (Across Pages)</button>
+              </div>
+              <table id="transaction-table">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Account</th>
+                    <th>Deposits</th>
+                    <th>Withdrawals</th>
+                    <th>Balance</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="transaction-body"></tbody>
+              </table>
+            </div>
+            <div class="table-footer">
+              <div class="pagination" id="pagination"></div>
+              <button class="btn btn-danger btn-sm btn-tooltip" id="delete-all-btn" data-tooltip="Caution: This will permanently delete ALL transactions!">Delete All</button>
+            </div>
+            <div class="pagination-info" id="pagination-info"></div>
+          </div>
+        </div>
+        <!-- Chart Section -->
+        <div class="card chart-container">
+          <div class="card-header"><div class="card-title">Expense Analysis</div></div>
+          <div class="card-content">
+            <div class="chart-filter-group">
+              <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="chart-category-filter">Filter by Category</label>
+                <select id="chart-category-filter">
+                  <option value="all">All Categories</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="chart-account-filter">Filter by Account</label>
+                <select id="chart-account-filter">
+                  <option value="all">All Accounts</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="expenseChart" style="max-height: 400px;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Chart.js and its datalabels plugin first, then other dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" 
+          onerror="this.onerror=null; this.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';"></script>
+  <script>
+    // Define global months array
+    const months = [
+      'All', 'January', 'February', 'March', 'April', 'May', 'June', 
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    let editingRow = null;
+    let editingExpense = null;
+    let uploadedFileData = null;
+    let transactions = [];
+    let filteredTransactions = [];
+    let monthlyExpenses = [];
+    const ITEMS_PER_PAGE = 5;
+    let currentPage = 1;
+    let selectedAcrossPages = new Set();
+    let expenseChart = null;
+
+    // Initialize on page load
+    window.addEventListener('load', function() {
+      if (typeof XLSX === 'undefined') {
+        console.error('SheetJS library failed to load.');
+        alert('Excel features unavailable. Please use CSV or refresh the page.');
+      }
+      if (typeof Chart === 'undefined') {
+        console.error('Chart.js library failed to load.');
+        alert('Chart features unavailable. Please refresh the page.');
+      }
+
+      if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+      } else {
+        console.warn('ChartDataLabels plugin not loaded.');
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date').value = today;
+
+      // Add a category filter input next to the account filter
+      const filterGroup = document.querySelector('.filter-group');
+      
+      if (filterGroup && !document.getElementById('category-filter')) {
+        const categoryFilterGroup = document.createElement('div');
+        categoryFilterGroup.className = 'form-group';
+        categoryFilterGroup.style.flex = '1';
+        categoryFilterGroup.style.minWidth = '200px';
+        
+        const categoryFilterLabel = document.createElement('label');
+        categoryFilterLabel.htmlFor = 'category-filter';
+        categoryFilterLabel.textContent = 'Filter by Category';
+        
+        const categoryFilterInput = document.createElement('input');
+        categoryFilterInput.type = 'text';
+        categoryFilterInput.id = 'category-filter';
+        categoryFilterInput.placeholder = 'e.g., Grocery';
+        categoryFilterInput.addEventListener('input', filterTransactions);
+        
+        categoryFilterGroup.appendChild(categoryFilterLabel);
+        categoryFilterGroup.appendChild(categoryFilterInput);
+        
+        filterGroup.appendChild(categoryFilterGroup);
+ kaç        }
+
+      populateMonthFilter();
+      populateYearFilter();
+      updateCurrentDate();
+      setInterval(updateCurrentDate, 60000);
+      
+      fetchTransactions();
+      fetchMonthlyExpenses();
+      checkDueExpenses();
+      setInterval(checkDueExpenses, 86400000);
+      
+      document.getElementById('month-filter').addEventListener('change', filterTransactions);
+      document.getElementById('year-filter').addEventListener('change', filterTransactions);
+      document.getElementById('account-filter').addEventListener('input', filterTransactions);
+      document.getElementById('chart-category-filter').addEventListener('change', updateChart);
+      document.getElementById('chart-account-filter').addEventListener('change', updateChart);
+      document.getElementById('monthly-expense-form').addEventListener('submit', addMonthlyExpense);
+    });
+
+    function populateMonthFilter() {
+      const monthFilter = document.getElementById('month-filter');
+      const months = ['All Months', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      months.forEach((month, index) => {
+        const option = document.createElement('option');
+        option.value = index === 0 ? 'all' : String(index).padStart(2, '0');
+        option.textContent = month;
+        if (index === new Date().getMonth() + 1) option.selected = true;
+        monthFilter.appendChild(option);
+      });
+    }
+
+    function populateYearFilter() {
+      const yearFilter = document.getElementById('year-filter');
+      const currentYear = new Date().getFullYear();
+      const optionAll = document.createElement('option');
+      optionAll.value = 'all';
+      optionAll.textContent = 'All Years';
+      yearFilter.appendChild(optionAll);
+      for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) option.selected = true;
+        yearFilter.appendChild(option);
+      });
+    }
+
+    function updateCurrentDate() {
+      const currentDateElement = document.getElementById('current-date');
+      const now = new Date();
+      const today = new Date().toISOString().split('T')[0];
+      const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+      currentDateElement.textContent = now.toLocaleString('en-US', options);
+      currentDateElement.classList.toggle('today', now.toISOString().split('T')[0] === today);
+    }
+
+    document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const transaction = {
+        date: document.getElementById('date').value,
+        description: document.getElementById('particulars').value,
+        deposits: parseFloat(document.getElementById('deposits').value) || 0,
+        withdrawals: parseFloat(document.getElementById('withdrawals').value) || 0,
+        openingBalance: parseFloat(document.getElementById('opening-balance').value) || 0,
+        category: document.getElementById('category').value,
+        account: document.getElementById('account').value.trim()
+      };
+
+      if (transaction.deposits > 0 && transaction.withdrawals > 0) return showError('Please enter either a deposit or withdrawal amount, not both.');
+      if (transaction.deposits === 0 && transaction.withdrawals === 0 && transaction.openingBalance === 0) return showError('Please enter an amount.');
+
+      try {
+        if (editingRow) {
+          await updateTransaction(editingRow._id, transaction);
+          editingRow = null;
+        } else {
+          if (transaction.openingBalance > 0) await addTransaction({ date: transaction.date, description: 'Opening Balance', deposits: transaction.openingBalance, withdrawals: 0, category: 'Opening Balance', account: transaction.account });
+          if (transaction.deposits > 0 || transaction.withdrawals > 0) await addTransaction({ date: transaction.date, description: transaction.description, deposits: transaction.deposits, withdrawals: transaction.withdrawals, category: transaction.category, account: transaction.account });
+        }
+        this.reset();
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        fetchTransactions();
+        showSuccess('Transaction saved successfully!');
+      } catch (error) {
+        showError(error.message);
+      }
+    });
+
+    document.getElementById('statement-upload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      const extension = file.name.split('.').pop().toLowerCase();
+      reader.onload = function(e) {
+        uploadedFileData = { data: e.target.result, extension };
+        document.getElementById('parse-btn').disabled = false;
+      };
+      if (['csv', 'txt'].includes(extension)) reader.readAsText(file);
+      else if (['xlsx', 'xls'].includes(extension)) reader.readAsBinaryString(file);
+      else {
+        alert('Unsupported file format. Use CSV, TXT, XLSX, or XLS.');
+        uploadedFileData = null;
+        document.getElementById('parse-btn').disabled = true;
+      }
+    });
+
+    document.getElementById('parse-btn').addEventListener('click', async function() {
+      if (!uploadedFileData) return alert('Please upload a file first.');
+      try {
+        const { data, extension } = uploadedFileData;
+        let parsedTransactions = [];
+        if (['csv', 'txt'].includes(extension)) parsedTransactions = await parseCSV(data);
+        else if (['xlsx', 'xls'].includes(extension) && typeof XLSX !== 'undefined') parsedTransactions = await parseExcel(data);
+        else throw new Error('Unsupported file format.');
+        if (!parsedTransactions.length) throw new Error('No valid transactions found.');
+        for (const transaction of parsedTransactions) await addTransaction(transaction);
+        uploadedFileData = null;
+        document.getElementById('parse-btn').disabled = true;
+        document.getElementById('statement-upload').value = '';
+        fetchTransactions();
+        showSuccess(`Parsed and saved ${parsedTransactions.length} transactions!`);
+      } catch (error) {
+        showError('Error parsing file: ' + error.message);
+      }
+    });
+
+    async function parseCSV(data) {
+      const rows = data.trim().split('\n').slice(1);
+      return rows.map(row => {
+        const cols = row.split(/\t/).map(col => col.trim());
+        const transaction = { date: cols[0] || '', description: cols[2] || 'No description', deposits: parseFloat(cols[4]) || 0, withdrawals: parseFloat(cols[5]) || 0, category: cols[1] || 'Uncategorized', account: cols[3] || 'Unknown' };
+        return (transaction.deposits > 0 || transaction.withdrawals > 0) ? transaction : null;
+      }).filter(Boolean);
+    }
+
+    async function parseExcel(data) {
+      if (!XLSX) throw new Error('Excel library not loaded.');
+      const workbook = XLSX.read(data, { type: 'binary' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+      return jsonData.slice(1).map(row => {
+        let date = row[0] || '';
+        if (typeof date === 'number') date = new Date(new Date(1899, 11, 30).getTime() + date * 86400000).toISOString().split('T')[0];
+        const transaction = { date, description: String(row[2] || 'No description').trim(), deposits: parseFloat(String(row[4] || '0').trim()) || 0, withdrawals: parseFloat(String(row[5] || '0').trim()) || 0, category: String(row[1] || 'Uncategorized').trim(), account: String(row[3] || 'Unknown').trim() };
+        return (transaction.deposits > 0 || transaction.withdrawals > 0) ? transaction : null;
+      }).filter(Boolean);
+    }
+
+    function filterTransactions() {
+      const selectedMonth = document.getElementById('month-filter').value;
+      const selectedYear = document.getElementById('year-filter').value;
+      const selectedAccount = document.getElementById('account-filter').value.trim().toLowerCase();
+      const categoryFilterElement = document.getElementById('category-filter');
+      const selectedCategory = categoryFilterElement ? categoryFilterElement.value.trim().toLowerCase() : '';
+
+      filteredTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        const monthMatch = selectedMonth === 'all' || tDate.getMonth() + 1 === parseInt(selectedMonth);
+        const yearMatch = selectedYear === 'all' || tDate.getFullYear() === parseInt(selectedYear);
+        const accountMatch = !selectedAccount || t.account.toLowerCase().includes(selectedAccount);
+        const categoryMatch = !selectedCategory || t.category.toLowerCase().includes(selectedCategory);
+        return monthMatch && yearMatch && accountMatch && categoryMatch;
+      }).sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateB.getTime() !== dateA.getTime()) {
+          return dateB - dateA;
+        }
+        return b._id.localeCompare(a._id);
+      });
+
+      currentPage = 1;
+      renderTransactions();
+      updateChartFilters();
+      updateChart();
+    }
+
+    function renderTransactions() {
+      const tbody = document.getElementById('transaction-body');
+      tbody.innerHTML = '';
+      const start = (currentPage - 1) * ITEMS_PER_PAGE;
+      const end = Math.min(start + ITEMS_PER_PAGE, filteredTransactions.length);
+      const pageTransactions = filteredTransactions.slice(start, end);
+
+      const balanceByAccount = new Map();
+      const sortedForBalance = [...filteredTransactions].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA - dateB;
+        }
+        return a._id.localeCompare(b._id);
+      });
+
+      sortedForBalance.forEach(t => {
+        const currentBalance = balanceByAccount.get(t.account) || 0;
+        t.balance = currentBalance + t.deposits - t.withdrawals;
+        balanceByAccount.set(t.account, t.balance);
+      });
+
+      pageTransactions.forEach(transaction => {
+        const tr = document.createElement('tr');
+        const formatCurrency = value => parseFloat(value).toFixed(2);
+        const isChecked = selectedAcrossPages.has(transaction._id) ? 'checked' : '';
+        if (isChecked) tr.classList.add('highlighted');
+        tr.innerHTML = `
+          <td><input type="checkbox" class="select-checkbox" data-id="${transaction._id}" ${isChecked}></td>
+          <td>${transaction.date}</td>
+          <td>${transaction.description}</td>
+          <td>${transaction.category}</td>
+          <td>${transaction.account}</td>
+          <td class="text-green">${formatCurrency(transaction.deposits)}</td>
+          <td class="text-red">${formatCurrency(transaction.withdrawals)}</td>
+          <td>${formatCurrency(transaction.balance)}</td>
+          <td><div class="actions-container">
+            <button class="btn btn-primary btn-sm edit-btn" data-id="${transaction._id}">Edit</button>
+            <button class="btn btn-danger btn-sm delete-btn" data-id="${transaction._id}">Delete</button>
+          </div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => editTransaction(btn.dataset.id)));
+      document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => deleteTransaction(btn.dataset.id)));
+      document.querySelectorAll('.select-checkbox').forEach(checkbox => checkbox.addEventListener('change', e => {
+        const id = e.target.dataset.id;
+        const row = e.target.closest('tr');
+        if (e.target.checked) { selectedAcrossPages.add(id); row.classList.add('highlighted'); } else { selectedAcrossPages.delete(id); row.classList.remove('highlighted'); }
+        updateDeleteButtonState();
+      }));
+
+      document.getElementById('select-all').addEventListener('change', toggleSelectAll);
+      document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedTransactions);
+      document.getElementById('delete-all-selected-btn').addEventListener('click', deleteAllSelectedTransactions);
+      document.getElementById('delete-all-btn').addEventListener('click', deleteAllTransactions);
+      renderPagination();
+      updateSummary();
+      updateDeleteButtonState();
+      updatePaginationInfo(start + 1, end);
+    }
+
+    function editTransaction(id) {
+      if (editingRow) return alert('Please complete or discard the current edit.');
+      editingRow = transactions.find(t => t._id === id);
+      document.getElementById('date').value = editingRow.date;
+      document.getElementById('particulars').value = editingRow.description;
+      document.getElementById('category').value = editingRow.category;
+      document.getElementById('account').value = editingRow.account;
+      document.getElementById('deposits').value = editingRow.deposits || '';
+      document.getElementById('withdrawals').value = editingRow.withdrawals || '';
+      document.getElementById('opening-balance').value = '';
+      const form = document.getElementById('transaction-form');
+      if (!document.getElementById('cancel-btn')) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancel-btn';
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn btn-secondary btn-block mt-2';
+        cancelBtn.textContent = 'Cancel Edit';
+        cancelBtn.addEventListener('click', cancelEdit);
+        form.appendChild(cancelBtn);
+      }
+    }
+
+    function cancelEdit() {
+      document.getElementById('transaction-form').reset();
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      editingRow = null;
+      const cancelBtn = document.getElementById('cancel-btn');
+      if (cancelBtn) cancelBtn.remove();
+    }
+
+    async function deleteTransaction(id) {
+      try {
+        await deleteTransactionFromServer(id);
+        if (editingRow && editingRow._id === id) cancelEdit();
+        selectedAcrossPages.delete(id);
+        fetchTransactions();
+        showSuccess('Transaction deleted successfully!');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    function toggleSelectAll(e) {
+      document.querySelectorAll('.select-checkbox').forEach(checkbox => {
+        checkbox.checked = e.target.checked;
+        const id = checkbox.dataset.id;
+        const row = checkbox.closest('tr');
+        if (e.target.checked) { selectedAcrossPages.add(id); row.classList.add('highlighted'); } else { selectedAcrossPages.delete(id); row.classList.remove('highlighted'); }
+      });
+      updateDeleteButtonState();
+    }
+
+    function updateDeleteButtonState() {
+      const anyChecked = Array.from(document.querySelectorAll('.select-checkbox')).some(cb => cb.checked);
+      document.getElementById('delete-selected-btn').disabled = !anyChecked;
+      document.getElementById('delete-all-selected-btn').disabled = !selectedAcrossPages.size;
+      document.getElementById('delete-all-btn').disabled = !filteredTransactions.length;
+    }
+
+    async function deleteSelectedTransactions() {
+      try {
+        const idsToDelete = Array.from(document.querySelectorAll('.select-checkbox:checked')).map(cb => cb.dataset.id);
+        if (!idsToDelete.length) return;
+        await deleteMultipleTransactions(idsToDelete);
+        idsToDelete.forEach(id => selectedAcrossPages.delete(id));
+        if (editingRow && idsToDelete.includes(editingRow._id)) cancelEdit();
+        document.getElementById('select-all').checked = false;
+        fetchTransactions();
+        showSuccess('Selected transactions deleted!');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    async function deleteAllSelectedTransactions() {
+      if (!confirm('Delete all selected transactions across all pages?')) return;
+      try {
+        const idsToDelete = Array.from(selectedAcrossPages);
+        if (!idsToDelete.length) return;
+        await deleteMultipleTransactions(idsToDelete);
+        selectedAcrossPages.clear();
+        if (editingRow && selectedAcrossPages.has(editingRow._id)) cancelEdit();
+        document.getElementById('select-all').checked = false;
+        fetchTransactions();
+        showSuccess('All selected transactions deleted!');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    async function deleteAllTransactions() {
+      if (!confirm('Delete ALL transactions? This cannot be undone.')) return;
+      try {
+        const idsToDelete = transactions.map(t => t._id);
+        await deleteMultipleTransactions(idsToDelete);
+        selectedAcrossPages.clear();
+        if (editingRow) cancelEdit();
+        document.getElementById('select-all').checked = false;
+        fetchTransactions();
+        showSuccess('All transactions deleted!');
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'btn btn-primary btn-sm pagination-btn';
+      prevBtn.textContent = 'Previous';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTransactions(); } });
+      pagination.appendChild(prevBtn);
+      for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = `btn btn-primary btn-sm pagination-btn ${i === currentPage ? 'btn-secondary' : ''}`;
+        pageBtn.textContent = i;
+        pageBtn.addEventListener('click', () => { currentPage = i; renderTransactions(); });
+        pagination.appendChild(pageBtn);
+      }
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'btn btn-primary btn-sm pagination-btn';
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = currentPage === totalPages || !totalPages;
+      nextBtn.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; renderTransactions(); } });
+      pagination.appendChild(nextBtn);
+    }
+
+    function updatePaginationInfo(start, end) {
+      const total = filteredTransactions.length;
+      document.getElementById('pagination-info').textContent = total ? `${start}-${end} of ${total}` : 'No transactions';
+    }
+
+    function updateSummary() {
+      const selectedMonth = document.getElementById('month-filter').value;
+      const selectedYear = document.getElementById('year-filter').value;
+      const totalIncome = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.deposits) || 0), 0);
+
+      let totalExpenses = filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.withdrawals) || 0), 0);
+      const filteredExpenses = monthlyExpenses.filter(exp => {
+        const monthMatch = selectedMonth === 'all' || exp.dueDate <= 31;
+        const yearMatch = selectedYear === 'all' || true;
+        return monthMatch && yearMatch && exp.status === 'pending';
+      });
+      const pendingExpensesTotal = filteredExpenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+      totalExpenses += pendingExpensesTotal;
+
+      const netBalance = totalIncome - totalExpenses;
+
+      document.querySelector('.income-card .card-content').textContent = totalIncome.toFixed(2);
+      document.querySelector('.expense-card .expense-total').textContent = totalExpenses.toFixed(2);
+      document.querySelector('.balance-card .card-content').textContent = netBalance.toFixed(2);
+
+      const pendingText = document.getElementById('pending-expenses-text');
+      if (pendingExpensesTotal > 0) {
+        pendingText.textContent = `Includes ${pendingExpensesTotal.toFixed(2)} pending`;
+        pendingText.style.display = 'block';
+      } else {
+        pendingText.style.display = 'none';
+      }
+    }
+
+    document.getElementById('export-btn').addEventListener('click', function() {
+      if (typeof XLSX === 'undefined') return alert('Excel export unavailable - library not loaded.');
+      
+      const modal = document.createElement('div');
+      modal.className = 'export-modal';
+      modal.style.position = 'fixed';
+      modal.style.left = '0';
+      modal.style.top = '0';
+      modal.style.width = '100%';
+      modal.style.height = '100%';
+      modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '1000';
+      
+      const modalContent = document.createElement('div');
+      modalContent.style.backgroundColor = '#fff';
+      modalContent.style.padding = '20px';
+      modalContent.style.borderRadius = '8px';
+      modalContent.style.width = '350px';
+      modalContent.style.maxWidth = '90%';
+      modalContent.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+      
+      const heading = document.createElement('h3');
+      heading.textContent = 'Export Options';
+      heading.style.marginBottom = '15px';
+      heading.style.color = '#1e293b';
+      
+      const form = document.createElement('form');
+      form.id = 'export-form';
+      
+      const monthGroup = document.createElement('div');
+      monthGroup.className = 'form-group';
+      
+      const monthLabel = document.createElement('label');
+      monthLabel.htmlFor = 'export-month';
+      monthLabel.textContent = 'Month';
+      
+      const monthSelect = document.createElement('select');
+      monthSelect.id = 'export-month';
+      monthSelect.className = 'form-control';
+      
+      months.forEach((month, index) => {
+        const option = document.createElement('option');
+        option.value = index === 0 ? 'all' : String(index).padStart(2, '0');
+        option.textContent = month;
+        if (index === new Date().getMonth() + 1) {
+          option.selected = true;
+        }
+        monthSelect.appendChild(option);
+      });
+      
+      monthGroup.appendChild(monthLabel);
+      monthGroup.appendChild(monthSelect);
+      
+      const yearGroup = document.createElement('div');
+      yearGroup.className = 'form-group';
+      
+      const yearLabel = document.createElement('label');
+      yearLabel.htmlFor = 'export-year';
+      yearLabel.textContent = 'Year';
+      
+      const yearSelect = document.createElement('select');
+      yearSelect.id = 'export-year';
+      yearSelect.className = 'form-control';
+      
+      const currentYear = new Date().getFullYear();
+      const optionAll = document.createElement('option');
+      optionAll.value = 'all';
+      optionAll.textContent = 'All Years';
+      yearSelect.appendChild(optionAll);
+      
+      for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) {
+          option.selected = true;
+        }
+        yearSelect.appendChild(option);
+      }
+      
+      yearGroup.appendChild(yearLabel);
+      yearGroup.appendChild(yearSelect);
+      
+      const typeGroup = document.createElement('div');
+      typeGroup.className = 'form-group';
+      
+      const typeLabel = document.createElement('label');
+      typeLabel.htmlFor = 'export-type';
+      typeLabel.textContent = 'Export Type';
+      
+      const typeSelect = document.createElement('select');
+      typeSelect.id = 'export-type';
+      typeSelect.className = 'form-control';
+      
+      const typeOption1 = document.createElement('option');
+      typeOption1.value = 'transactions';
+      typeOption1.textContent = 'Transactions';
+      typeOption1.selected = true;
+      
+      const typeOption2 = document.createElement('option');
+      typeOption2.value = 'summary';
+      typeOption2.textContent = 'Category Summary';
+      
+      typeSelect.appendChild(typeOption1);
+      typeSelect.appendChild(typeOption2);
+      
+      typeGroup.appendChild(typeLabel);
+      typeGroup.appendChild(typeSelect);
+      
+      const buttonGroup = document.createElement('div');
+      buttonGroup.style.display = 'flex';
+      buttonGroup.style.justifyContent = 'space-between';
+      buttonGroup.style.marginTop = '20px';
+      
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.className = 'btn btn-secondary';
+      cancelButton.textContent = 'Cancel';
+      cancelButton.addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+      
+      const exportButton = document.createElement('button');
+      exportButton.type = 'button';
+      exportButton.className = 'btn btn-primary';
+      exportButton.textContent = 'Export';
+      exportButton.addEventListener('click', () => {
+        const month = monthSelect.value;
+        const year = yearSelect.value;
+        const type = typeSelect.value;
+        
+        performExport(month, year, type);
+        document.body.removeChild(modal);
+      });
+      
+      buttonGroup.appendChild(cancelButton);
+      buttonGroup.appendChild(exportButton);
+      
+      form.appendChild(monthGroup);
+      form.appendChild(yearGroup);
+      form.appendChild(typeGroup);
+      form.appendChild(buttonGroup);
+      
+      modalContent.appendChild(heading);
+      modalContent.appendChild(form);
+      modal.appendChild(modalContent);
+      
+      document.body.appendChild(modal);
+    });
+
+    function performExport(month, year, type) {
+      if (typeof XLSX === 'undefined') {
+        return alert('Excel export unavailable - library not loaded.');
+      }
+      
+      let exportTransactions = [...transactions];
+      
+      if (month !== 'all' || year !== 'all') {
+        exportTransactions = exportTransactions.filter(t => {
+          const tDate = new Date(t.date);
+          const monthMatch = month === 'all' || tDate.getMonth() + 1 === parseInt(month);
+          const yearMatch = year === 'all' || tDate.getFullYear() === parseInt(year);
+          return monthMatch && yearMatch;
+        });
+      }
+      
+      const balanceByAccount = new Map();
+      const sortedForBalance = [...exportTransactions].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA - dateB;
+        }
+        return a._id.localeCompare(b._id);
+      });
+
+      sortedForBalance.forEach(t => {
+        const currentBalance = balanceByAccount.get(t.account) || 0;
+        t.balance = currentBalance + t.deposits - t.withdrawals;
+        balanceByAccount.set(t.account, t.balance);
+      });
+      
+      let exportData;
+      
+      if (type === 'transactions') {
+        exportData = exportTransactions.map(t => ({
+          Date: t.date, 
+          Description: t.description, 
+          Category: t.category, 
+          Account: t.account, 
+          Deposits: t.deposits, 
+          Withdrawals: t.withdrawals, 
+          Balance: t.balance
+        }));
+      } else {
+        const categoryData = {};
+        
+        exportTransactions.forEach(t => {
+          if (!categoryData[t.category]) {
+            categoryData[t.category] = {
+              Category: t.category,
+              TotalDeposits: 0,
+              TotalWithdrawals: 0,
+              Count: 0,
+              NetFlow: 0
+            };
+          }
+          
+          categoryData[t.category].TotalDeposits += parseFloat(t.deposits) || 0;
+          categoryData[t.category].TotalWithdrawals += parseFloat(t.withdrawals) || 0;
+          categoryData[t.category].Count += 1;
+          categoryData[t.category].NetFlow = categoryData[t.category].TotalDeposits - categoryData[t.category].TotalWithdrawals;
+        });
+        
+        exportData = Object.values(categoryData).sort((a, b) => b.NetFlow - a.NetFlow);
+      }
+      
+      const now = new Date();
+      const pad = num => String(num).padStart(2, '0');
+      
+      let period = '';
+      if (month !== 'all') {
+        period += `_${months[parseInt(month)]}`;
+      }
+      if (year !== 'all') {
+        period += `_${year}`;
+      }
+      
+      const timestamp = `${pad(now.getDate())}_${pad(now.getMonth() + 1)}_${now.getFullYear()}_${pad(now.getHours())}_${pad(now.getMinutes())}`;
+      const filename = `Budget_Tracker${period}_${type}_${timestamp}.xlsx`;
+      
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      if (type === 'transactions' && exportData.length > 0) {
+        const totalDeposits = exportTransactions.reduce((sum, t) => sum + (parseFloat(t.deposits) || 0), 0);
+        const totalWithdrawals = exportTransactions.reduce((sum, t) => sum + (parseFloat(t.withdrawals) || 0), 0);
+        const netBalance = totalDeposits - totalWithdrawals;
+        
+        const summaryData = [
+          ['Summary Information'],
+          ['Total Income', totalDeposits.toFixed(2)],
+          ['Total Expenses', totalWithdrawals.toFixed(2)],
+          ['Net Balance', netBalance.toFixed(2)],
+          ['Transaction Count', exportTransactions.length],
+          ['Period', period.replace(/_/g, ' ').trim() || 'All Time'],
+          ['Export Date', now.toLocaleDateString()]
+        ];
+        
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+      }
+      
+      const sheetName = type === 'transactions' ? "Transactions" : "Category Summary";
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      
+      XLSX.writeFile(wb, filename);
+      
+      showSuccess(`Export completed: ${filename}`);
+    }
+
+    function showSuccess(message) {
+      const successAlert = document.getElementById('success-alert');
+      successAlert.textContent = message;
+      successAlert.style.display = 'block';
+      setTimeout(() => successAlert.style.display = 'none', 3000);
+    }
+
+    function showError(message) {
+      const errorAlert = document.getElementById('error-alert');
+      errorAlert.textContent = message;
+      errorAlert.style.display = 'block';
+      setTimeout(() => errorAlert.style.display = 'none', 3000);
+    }
+
+    async function fetchTransactions() {
+      try {
+        const response = await fetch('http://localhost:3000/api/transactions');
+        if (!response.ok) throw new Error('Failed to fetch transactions');
+        transactions = (await response.json()).map(t => ({
+          ...t,
+          _id: t._id,
+          date: t.date.split('T')[0],
+          deposits: parseFloat(t.deposits) || 0,
+          withdrawals: parseFloat(t.withdrawals) || 0,
+          account: t.account || 'Unknown',
+          balance: 0
+        }));
+        filterTransactions();
+      } catch (error) {
+        showError('Error loading transactions: ' + error.message);
+      }
+    }
+
+    async function addTransaction(transaction) {
+      try {
+        const response = await fetch('http://localhost:3000/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(transaction)
+        });
+        if (!response.ok) throw new Error((await response.json()).error || 'Failed to add transaction');
+        return { ...(await response.json()), balance: 0 };
+      } catch (error) {
+        throw new Error('Error saving transaction: ' + error.message);
+      }
+    }
+
+    async function updateTransaction(id, transaction) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/transactions/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(transaction)
+        });
+        if (!response.ok) throw new Error((await response.json()).error || 'Failed to update transaction');
+        fetchTransactions();
+      } catch (error) {
+        throw new Error('Error updating transaction: ' + error.message);
+      }
+    }
+
+    async function deleteTransactionFromServer(id) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/transactions/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error((await response.json()).error || 'Failed to delete transaction');
+      } catch (error) {
+        throw new Error('Error deleting transaction: ' + error.message);
+      }
+    }
+
+    async function deleteMultipleTransactions(ids) {
+      try {
+        const response = await fetch('http://localhost:3000/api/transactions/delete-multiple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids })
+        });
+        if (!response.ok) throw new Error((await response.json()).error || 'Failed to delete transactions');
+      } catch (error) {
+        throw new Error('Error deleting transactions: ' + error.message);
+      }
+    }
+
+    function updateChartFilters() {
+      const categoryFilter = document.getElementById('chart-category-filter');
+      const accountFilter = document.getElementById('chart-account-filter');
+      const categories = [...new Set(filteredTransactions.map(t => t.category))].sort();
+      const accounts = [...new Set(filteredTransactions.map(t => t.account))].sort();
+
+      categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+      });
+
+      accountFilter.innerHTML = '<option value="all">All Accounts</option>';
+      accounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account;
+        option.textContent = account;
+        accountFilter.appendChild(option);
+      });
+    }
+
+    function updateChart() {
+      const categoryFilter = document.getElementById('chart-category-filter').value;
+      const accountFilter = document.getElementById('chart-account-filter').value;
+
+      let chartData = filteredTransactions.filter(t => t.withdrawals > 0);
+      if (categoryFilter !== 'all') chartData = chartData.filter(t => t.category === categoryFilter);
+      if (accountFilter !== 'all') chartData = chartData.filter(t => t.account === accountFilter);
+
+      const groupBy = categoryFilter === 'all' ? 'category' : 'account';
+      const groupedData = chartData.reduce((acc, t) => {
+        const key = t[groupBy];
+        acc[key] = (acc[key] || 0) + t.withdrawals;
+        return acc;
+      }, {});
+
+      const labels = Object.keys(groupedData);
+      const data = Object.values(groupedData);
+      
+      const lightColors = [
+        'rgba(187, 222, 251, 0.7)', 
+        'rgba(209, 196, 233, 0.7)', 
+        'rgba(244, 143, 177, 0.7)', 
+        'rgba(197, 225, 165, 0.7)', 
+        'rgba(255, 224, 130, 0.7)', 
+        'rgba(255, 204, 188, 0.7)', 
+        'rgba(207, 216, 220, 0.7)', 
+        'rgba(255, 249, 196, 0.7)', 
+        'rgba(178, 235, 242, 0.7)', 
+        'rgba(225, 190, 231, 0.7)', 
+        'rgba(179, 229, 252, 0.7)', 
+        'rgba(200, 230, 201, 0.7)'
+      ];
+      
+      const colors = labels.map((_, i) => lightColors[i % lightColors.length]);
+      const borderColors = labels.map((_, i) => lightColors[i % lightColors.length].replace('0.7)', '1)'));
+
+      if (expenseChart) expenseChart.destroy();
+
+      const ctx = document.getElementById('expenseChart').getContext('2d');
+      try {
+        expenseChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+              backgroundColor: colors,
+              borderColor: borderColors,
+              borderWidth: 1,
+              hoverOffset: 15
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+              legend: { 
+                position: 'right',
+                labels: {
+                  padding: 15,
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const value = context.raw.toFixed(2);
+                    const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                    const percentage = ((context.raw / total) * 100).toFixed(1);
+                    return `${context.label}: ${value} (${percentage}%)`;
+                  }
+                }
+              },
+              datalabels: {
+                display: function(context) {
+                  const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                  return context.raw / total >= 0.05;
+                },
+                formatter: (value, ctx) => {
+                  const total = ctx.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return percentage + '%';
+                },
+                color: '#fff',
+                font: {
+                  weight: 'bold',
+                  size: 12
+                }
+              }
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: 'easeOutQuart'
+            },
+            onClick: (event, elements) => {
+              if (elements.length === 0) return;
+              
+              const index = elements[0].index;
+              const category = labels[index];
+              
+              document.getElementById('account-filter').value = '';
+              
+              if (groupBy === 'category') {
+                currentPage = 1;
+                document.getElementById('chart-category-filter').value = category;
+                const categoryInput = document.getElementById('category-filter');
+                if (categoryInput) {
+                  categoryInput.value = category;
+                } else {
+                  const hiddenFilter = document.createElement('input');
+                  hiddenFilter.type = 'hidden';
+                  hiddenFilter.id = 'category-filter';
+                  hiddenFilter.value = category;
+                  document.body.appendChild(hiddenFilter);
+                }
+                filterTransactions();
+                showSuccess(`Showing transactions for category: ${category}`);
+              } else {
+                document.getElementById('account-filter').value = category;
+                filterTransactions();
+                showSuccess(`Showing transactions for account: ${category}`);
+              }
+            }
+          }
+        });
+        
+        const chartContainer = document.querySelector('.chart-container .card-content');
+        if (!document.getElementById('chart-title')) {
+          const title = document.createElement('h4');
+          title.id = 'chart-title';
+          title.textContent = 'Expense Distribution';
+          title.style.textAlign = 'center';
+          title.style.marginBottom = '15px';
+          title.style.fontWeight = '600';
+          title.style.color = '#475569';
+          chartContainer.insertBefore(title, chartContainer.firstChild);
+        }
+        
+        if (!document.getElementById('reset-chart-filters')) {
+          const resetButton = document.createElement('button');
+          resetButton.id = 'reset-chart-filters';
+          resetButton.className = 'btn btn-secondary btn-sm';
+          resetButton.textContent = 'Reset Filters';
+          resetButton.style.marginLeft = '10px';
+          resetButton.addEventListener('click', () => {
+            document.getElementById('chart-category-filter').value = 'all';
+            document.getElementById('chart-account-filter').value = 'all';
+            document.getElementById('account-filter').value = '';
+            if (document.getElementById('category-filter')) {
+              document.getElementById('category-filter').value = '';
+            }
+            updateChart();
+            filterTransactions();
+          });
+          
+          const filterDiv = document.querySelector('.chart-filter-group');
+          filterDiv.appendChild(resetButton);
+        }
+      } catch (error) {
+        console.error('Error creating chart:', error);
+        showError('Failed to render chart: ' + error.message);
+      }
+    }
+
+    async function fetchMonthlyExpenses() {
+      try {
+        const response = await fetch('http://localhost:3000/api/monthly-expenses');
+        if (!response.ok) throw new Error('Failed to fetch monthly expenses');
+        monthlyExpenses = await response.json();
+        renderMonthlyExpenses();
+        updateSummary();
+      } catch (error) {
+        const storedExpenses = localStorage.getItem('monthlyExpenses');
+        if (storedExpenses) {
+          monthlyExpenses = JSON.parse(storedExpenses);
+          renderMonthlyExpenses();
+          updateSummary();
+        }
+      }
+    }
+
+    async function addMonthlyExpense(e) {
+      e.preventDefault();
+      const expense = {
+        name: document.getElementById('expense-name').value,
+        amount: parseFloat(document.getElementById('expense-amount').value),
+        dueDate: parseInt(document.getElementById('expense-due-date').value),
+        category: document.getElementById('expense-category').value,
+        account: document.getElementById('expense-account').value,
+        status: editingExpense ? editingExpense.status : 'pending'
+      };
+
+      try {
+        if (editingExpense) {
+          // Update existing expense
+          expense._id = editingExpense._id;
+          const response = await fetch(`http://localhost:3000/api/monthly-expenses/${editingExpense._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(expense)
+          });
+
+          if (!response.ok) throw new Error('API not available');
+          const updatedExpense = await response.json();
+          monthlyExpenses = monthlyExpenses.map(exp => (exp._id === editingExpense._id ? updatedExpense : exp));
+          showSuccess('Monthly expense updated successfully!');
+        } else {
+          // Add new expense
+          expense._id = 'me_' + Date.now();
+          const response = await fetch('http://localhost:3000/api/monthly-expenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(expense)
+          });
+
+          if (!response.ok) throw new Error('API not available');
+          const savedExpense = await response.json();
+          monthlyExpenses.push(savedExpense);
+          showSuccess('Monthly expense added successfully!');
+        }
+      } catch (error) {
+        // Fallback to local storage
+        if (editingExpense) {
+          monthlyExpenses = monthlyExpenses.map(exp => (exp._id === editingExpense._id ? expense : exp));
+          showSuccess('Monthly expense updated locally!');
+        } else {
+          monthlyExpenses.push(expense);
+          showSuccess('Monthly expense added locally!');
+        }
+        localStorage.setItem('monthlyExpenses', JSON.stringify(monthlyExpenses));
+      }
+
+      // Reset form and state
+      document.getElementById('monthly-expense-form').reset();
+      const submitBtn = document.getElementById('monthly-expense-form').querySelector('button[type="submit"]');
+      submitBtn.textContent = 'Add Monthly Expense';
+      editingExpense = null;
+      const cancelBtn = document.getElementById('cancel-expense-btn');
+      if (cancelBtn) cancelBtn.remove();
+
+      renderMonthlyExpenses();
+      updateSummary();
+    }
+
+    function renderMonthlyExpenses() {
+      const tbody = document.getElementById('monthly-expense-body');
+      tbody.innerHTML = '';
+
+      monthlyExpenses.forEach(expense => {
+        const tr = document.createElement('tr');
+        const isPending = expense.status === 'pending';
+        const statusClass = isPending ? 'text-red' : 'text-green';
+        const statusText = isPending ? 'Pending' : 'Paid';
+
+        tr.innerHTML = `
+          <td>${expense.name}${isPending ? '<span class="pending-badge">Unpaid</span>' : ''}</td>
+          <td>${parseFloat(expense.amount).toFixed(2)}</td>
+          <td>${expense.dueDate}</td>
+          <td>${expense.category}</td>
+          <td>${expense.account}</td>
+          <td class="${statusClass}">${statusText}</td>
+          <td>
+            <div class="actions-container">
+              <button class="btn btn-primary btn-sm edit-expense-btn" data-id="${expense._id}">Edit</button>
+              <button class="btn ${isPending ? 'btn-success' : 'btn-secondary'} btn-sm toggle-status-btn" 
+                data-id="${expense._id}" data-status="${expense.status}">
+                ${isPending ? 'Mark Paid' : 'Mark Pending'}
+              </button>
+              <button class="btn btn-danger btn-sm delete-expense-btn" data-id="${expense._id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll('.edit-expense-btn').forEach(btn => {
+        btn.addEventListener('click', editMonthlyExpense);
+      });
+
+      document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+        btn.addEventListener('click', toggleExpenseStatus);
+      });
+
+      document.querySelectorAll('.delete-expense-btn').forEach(btn => {
+        btn.addEventListener('click', deleteMonthlyExpense);
+      });
+    }
+
+    function editMonthlyExpense(e) {
+      const id = e.target.dataset.id;
+      editingExpense = monthlyExpenses.find(exp => exp._id === id);
+      if (!editingExpense) return;
+
+      // Populate the form with expense data
+      document.getElementById('expense-name').value = editingExpense.name;
+      document.getElementById('expense-amount').value = editingExpense.amount;
+      document.getElementById('expense-due-date').value = editingExpense.dueDate;
+      document.getElementById('expense-category').value = editingExpense.category;
+      document.getElementById('expense-account').value = editingExpense.account;
+
+      // Change the submit button text to indicate editing
+      const submitBtn = document.getElementById('monthly-expense-form').querySelector('button[type="submit"]');
+      submitBtn.textContent = 'Update Expense';
+
+      // Add a cancel button if it doesn't exist
+      const form = document.getElementById('monthly-expense-form');
+      if (!document.getElementById('cancel-expense-btn')) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancel-expense-btn';
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn btn-secondary btn-block mt-2';
+        cancelBtn.textContent = 'Cancel Edit';
+        cancelBtn.addEventListener('click', cancelExpenseEdit);
+        form.appendChild(cancelBtn);
+      }
+    }
+
+    function cancelExpenseEdit() {
+      document.getElementById('monthly-expense-form').reset();
+      const submitBtn = document.getElementById('monthly-expense-form').querySelector('button[type="submit"]');
+      submitBtn.textContent = 'Add Monthly Expense';
+      editingExpense = null;
+      const cancelBtn = document.getElementById('cancel-expense-btn');
+      if (cancelBtn) cancelBtn.remove();
+    }
+
+    async function toggleExpenseStatus(e) {
+      const id = e.target.dataset.id;
+      const currentStatus = e.target.dataset.status;
+      const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
+      
+      const expense = monthlyExpenses.find(exp => exp._id === id);
+      if (!expense) return;
+      
+      if (currentStatus === 'pending' && newStatus === 'paid') {
+        const today = new Date().toISOString().split('T')[0];
+        const transaction = {
+          date: today,
+          description: `${expense.name}`,
+          deposits: 0,
+          withdrawals: expense.amount,
+          category: expense.category,
+          account: expense.account
+        };
+        
+        try {
+          await addTransaction(transaction);
+          showSuccess(`Added transaction for paid expense: ${expense.name}`);
+        } catch (error) {
+          showError('Error creating transaction: ' + error.message);
+          return;
+        }
+      }
+      
+      expense.status = newStatus;
+      
+      try {
+        const response = await fetch(`http://localhost:3000/api/monthly-expenses/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (!response.ok) throw new Error('API not available');
+      } catch (error) {
+        localStorage.setItem('monthlyExpenses', JSON.stringify(monthlyExpenses));
+      }
+      
+      renderMonthlyExpenses();
+      fetchTransactions();
+      updateSummary();
+    }
+    
+    async function deleteMonthlyExpense(e) {
+      const id = e.target.dataset.id;
+      
+      try {
+        const response = await fetch(`http://localhost:3000/api/monthly-expenses/${id}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error('API not available');
+      } catch (error) {
+        monthlyExpenses = monthlyExpenses.filter(exp => exp._id !== id);
+        localStorage.setItem('monthlyExpenses', JSON.stringify(monthlyExpenses));
+      }
+      
+      monthlyExpenses = monthlyExpenses.filter(exp => exp._id !== id);
+      renderMonthlyExpenses();
+      updateSummary();
+      showSuccess('Monthly expense deleted!');
+    }
+    
+    function checkDueExpenses() {
+      const today = new Date();
+      const currentDay = today.getDate();
+      
+      const dueExpenses = monthlyExpenses.filter(
+        exp => exp.status === 'pending' && exp.dueDate <= currentDay
+      );
+      
+      if (dueExpenses.length > 0) {
+        showAlert(`You have ${dueExpenses.length} expenses due today!`, 'warning');
+      }
+    }
+    
+    function showAlert(message, type) {
+      const alertDiv = document.createElement('
